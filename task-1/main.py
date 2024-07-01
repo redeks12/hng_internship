@@ -7,6 +7,9 @@ from os import getenv
 load_dotenv()
 
 app = Flask(__name__)
+env = getenv("FLASK_ENV", "development")
+app.config.from_object(f"config.{env.capitalize()}Config")
+
 weather_key = getenv("WEATHER_API_KEY")
 ip_token = getenv("IP_INFO_TOKEN")
 
@@ -29,7 +32,7 @@ def hello():
 
     requester_ip = request.remote_addr
     try:
-        local = get(f"https://ipinfo.io/{'102.89.46.130'}?token={ip_token}")
+        local = get(f"https://ipinfo.io/{requester_ip}?token={ip_token}")
         location = local.json()
         city = location.get("city")
 
@@ -54,4 +57,4 @@ def hello():
 
 if __name__ == "__main__":
     # Run the Flask application if this script is executed directly.
-    app.run(debug=True)
+    app.run()
