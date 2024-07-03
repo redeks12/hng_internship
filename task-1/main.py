@@ -1,8 +1,9 @@
 #!/usr/bin/python3
+from os import getenv
+
+from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from requests import get
-from dotenv import load_dotenv
-from os import getenv
 
 load_dotenv()
 
@@ -28,14 +29,13 @@ def hello():
     """
     visitor = request.args.get("visitor_name")
     if not visitor:
-        return jsonify({"error": 'missing parameter "visitor_name"'}, 404)
+        return jsonify({"error": 'missing parameter "visitor_name"'}), 404
 
-    requester_ip = request.remote_addr
+    requester_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
     try:
-        local = get(f"https://ipinfo.io/{requester_ip}?token={ip_token}")
+        local = get(f"https://ipinfo.io/{requester_ip}/json/")
         location = local.json()
         city = location.get("city")
-
         if local.ok:
             coord = get(
                 f"https://api.weatherapi.com/v1/current.json",
@@ -51,8 +51,27 @@ def hello():
                     "location": city,
                 }
             )
+
     except:
-        return jsonify({"error": "unexpected error"}, 500)
+        return (
+            jsonify(
+                {
+                    "error": "unexpected error",
+                    "val": request.headers.get("X-Forwarded-For"),
+                }
+            ),
+            500,
+        )
+
+    return (
+        jsonify(
+            {
+                "error": "unexpected condition encountered",
+                "val": request.headers.get("X-Forwarded-For"),
+            }
+        ),
+        500,
+    )
 
 
 if __name__ == "__main__":
